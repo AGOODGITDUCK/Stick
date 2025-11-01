@@ -8,5 +8,5 @@ Having A freind :)
 Pressing Things with no cursor
 Seeing AI Interact
 
-Adblocker like this
+How to make the adblocker 1.Train The AI 2.Do this
 <img width="190" height="175" alt="lol" src="https://github.com/user-attachments/assets/44680d82-7b20-4512-8503-bfe6d0dda13e" />
