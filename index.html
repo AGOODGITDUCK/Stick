@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman AI Download</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0eafc, #cfdef3);
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #007bff;
+            width: 100%;
+            padding: 25px 0;
+            text-align: center;
+            color: white;
+            font-size: 2em;
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        main {
+            text-align: center;
+            max-width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        main img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        main img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        p {
+            font-size: 1.1em;
+            line-height: 1.6em;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 15px 35px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1em;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .download-btn:hover {
+            background-color: #1e7e34;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+        }
+
+        .note {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #555;
+            text-align: center;
+            padding-bottom: 30px;
+        }
+
+        footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header>Stickman AI</header>
+    <main>
+        <img src="https://raw.githubusercontent.com/AGOODGITDUCK/Stick/main/Capture.PNG" alt="Stickman Preview">
+        <p>Download the Stickman AI executable for Windows. It’s a standalone program that interacts with your desktop and cursor. Works on Windows 7 and newer. If it is slow, read the readme file on my GitHub.</p>
+        <a href="https://sourceforge.net/projects/stickfigureexedonlowd/files/stick.exe/download/" class="download-btn" target="_blank">Download Stickman.exe</a>
+        <p class="note">Windows Defender may warn—this is normal for new executables.</p>
+    </main>
+    <footer>
+        Made by Adam T. Nassar | <a href="https://github.com/AGOODGITDUCK/Stick" target="_blank">GitHub</a>
+    </footer>
+</body>
+</html>
