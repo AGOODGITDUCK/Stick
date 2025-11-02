@@ -34,16 +34,6 @@
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.8s forwards;
-        }
-
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         main img {
@@ -51,25 +41,18 @@
             border-radius: 8px;
             margin-bottom: 25px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        main img:hover {
-            transform: scale(1.03);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
 
         p {
             font-size: 1.1em;
             line-height: 1.6em;
-            margin-bottom: 15px;
+            margin-bottom: 25px;
         }
 
-        .download-btn {
+        .download-btn, .versions-btn {
             display: inline-block;
             margin-top: 15px;
             padding: 15px 35px;
-            background-color: #28a745;
             color: white;
             text-decoration: none;
             font-weight: 700;
@@ -79,16 +62,22 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
+        .download-btn {
+            background-color: #28a745;
+        }
         .download-btn:hover {
             background-color: #1e7e34;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.25);
         }
 
-        .note {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 10px;
+        .versions-btn {
+            background-color: #17a2b8;
+        }
+        .versions-btn:hover {
+            background-color: #117a8b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
         }
 
         footer {
@@ -113,12 +102,13 @@
     <header>Stickman AI</header>
     <main>
         <img src="https://raw.githubusercontent.com/AGOODGITDUCK/Stick/main/Capture.PNG" alt="Stickman Preview">
-        <p>Download the Stickman AI executable for Windows. It’s a standalone program that interacts with your desktop and cursor. Works on Windows 7 and newer. If it is slow, read the readme file on my GitHub.</p>
+        <p>Download the Stickman AI executable for Windows. It’s a standalone program that interacts with your desktop and cursor. Works on Windows 7 and newer. If it is slow, check the README file on my GitHub.</p>
         <a href="https://sourceforge.net/projects/stickfigureexedonlowd/files/stick.exe/download/" class="download-btn" target="_blank">Download Stickman.exe</a>
-        <p class="note">Windows Defender may warn—this is normal for new executables.</p>
+        <br>
+        <a href="Version/index.html" class="versions-btn" target="_blank">See All Versions</a>
     </main>
     <footer>
-        Made by Adam T. Nassar | <a href="https://github.com/AGOODGITDUCK/Stick" target="_blank">GitHub</a>
+        Made by Adam T. Nassar | <a href="https://github.com/AGOODGITDUCK/Stick" target="_blank">Github</a>
     </footer>
 </body>
 </html>
