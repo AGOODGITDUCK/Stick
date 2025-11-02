@@ -1,183 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stickman AI Preview</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
-        body {
-            font-family: 'Roboto', Arial, sans-serif;
-            background: linear-gradient(135deg, #f0f4f7, #d9e2ec);
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-
-        header {
-            background-color: #007bff;
-            width: 100%;
-            padding: 20px 0;
-            text-align: center;
-            color: white;
-            font-size: 2em;
-            font-weight: 700;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .back-btn {
-            display: inline-block;
-            margin: 20px auto;
-            padding: 12px 25px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1em;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .back-btn:hover {
-            background-color: #1e7e34;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-        }
-
-        main {
-            text-align: center;
-            max-width: 800px;
-            margin: 20px auto 40px;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        }
-
-        canvas {
-            background-color: #e8f0f5;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            margin-bottom: 25px;
-        }
-
-        footer {
-            margin-top: 40px;
-            font-size: 0.9em;
-            color: #555;
-            text-align: center;
-            padding-bottom: 30px;
-        }
-
-        footer a {
-            color: #007bff;
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stickman AI Preview</title>
+<style>
+    body {
+        margin: 0;
+        background: #f0f8ff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+    }
+    canvas {
+        background: #fff;
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        cursor: grab;
+    }
+    .back-btn {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        padding: 10px 20px;
+        background-color: #28a745;
+        color: white;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+    }
+    .back-btn:hover {
+        background-color: #1e7e34;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.25);
+    }
+</style>
 </head>
 <body>
-    <header>Stickman AI Preview</header>
-    <a href="../index.html" class="back-btn">Go Back</a>
-    <main>
-        <canvas id="stickmanCanvas" width="500" height="500"></canvas>
-        <p>Interact with the Stickman AI preview below! Drag him with your mouse or watch him move around.</p>
-    </main>
-    <footer>
-        Made by Adam T. Nassar | <a href="https://github.com/AGOODGITDUCK/Stick" target="_blank">Github</a>
-    </footer>
+<a href="../index.html" class="back-btn">Go Back</a>
+<canvas id="stickmanCanvas" width="500" height="500"></canvas>
+<script>
+const canvas = document.getElementById("stickmanCanvas");
+const ctx = canvas.getContext("2d");
 
-    <script type="text/javascript">
-        // Example of simple stickman drawing in JS if you want to run immediately
-        const canvas = document.getElementById('stickmanCanvas');
-        const ctx = canvas.getContext('2d');
+let x = canvas.width / 2;
+let y = canvas.height / 2 + 50;
+let vx = 0;
+let vy = 0;
+const gravity = 0.8;
+const armReach = 100;
+let frame = 0;
+let mood = "neutral"; // can be 'neutral', 'curious', 'happy'
 
-        let x = 250, y = 250, vx = 2, vy = 0, ay = 0.5;
-        let dragging = false, offsetX = 0, offsetY = 0;
+let mousePos = {x: x, y: y};
+let dragging = false;
+let dragOffset = {x:0, y:0};
 
-        function drawStickman() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = 'black';
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mousePos.x = e.clientX - rect.left;
+    mousePos.y = e.clientY - rect.top;
 
-            // head
-            ctx.beginPath();
-            ctx.arc(x, y - 50, 20, 0, Math.PI*2);
-            ctx.stroke();
+    if (dragging) {
+        x = mousePos.x - dragOffset.x;
+        y = mousePos.y - dragOffset.y;
+        vx = 0;
+        vy = 0;
+    }
+});
 
-            // body
-            ctx.beginPath();
-            ctx.moveTo(x, y - 30);
-            ctx.lineTo(x, y + 30);
-            ctx.stroke();
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    if (Math.abs(mx - x) < 30 && Math.abs(my - y + 50) < 80) {
+        dragging = true;
+        dragOffset.x = mx - x;
+        dragOffset.y = my - y;
+        canvas.style.cursor = 'grabbing';
+    }
+});
 
-            // arms
-            ctx.beginPath();
-            ctx.moveTo(x, y - 20);
-            ctx.lineTo(x - 25, y + 10);
-            ctx.moveTo(x, y - 20);
-            ctx.lineTo(x + 25, y + 10);
-            ctx.stroke();
+canvas.addEventListener('mouseup', () => {
+    dragging = false;
+    canvas.style.cursor = 'grab';
+});
 
-            // legs
-            ctx.beginPath();
-            ctx.moveTo(x, y + 30);
-            ctx.lineTo(x - 25, y + 70);
-            ctx.moveTo(x, y + 30);
-            ctx.lineTo(x + 25, y + 70);
-            ctx.stroke();
+// Helper function to rotate points
+function rotatePoint(px, py, ox, oy, angleDeg) {
+    let a = angleDeg * Math.PI / 180;
+    let dx = px - ox;
+    let dy = py - oy;
+    return [
+        ox + dx * Math.cos(a) - dy * Math.sin(a),
+        oy + dx * Math.sin(a) + dy * Math.cos(a)
+    ];
+}
+
+// Draw stickman
+function drawStickman() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame += 1;
+    const t = frame / 12;
+
+    ctx.lineWidth = 6; // Bolder outline
+    ctx.strokeStyle = "#000"; // black
+
+    const headX = x;
+    const headY = y - 80;
+    const bodyTop = [x, y - 68];
+    const bodyBottom = [x, y];
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(headX, headY, 12, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(...bodyTop);
+    ctx.lineTo(...bodyBottom);
+    ctx.stroke();
+
+    // Legs swing
+    const legLength = 50;
+    const swing = 15 * Math.sin(t);
+    const leftLeg = rotatePoint(bodyBottom[0], bodyBottom[1]+legLength, ...bodyBottom, -15 + swing);
+    const rightLeg = rotatePoint(bodyBottom[0], bodyBottom[1]+legLength, ...bodyBottom, 15 - swing);
+    ctx.beginPath();
+    ctx.moveTo(...bodyBottom);
+    ctx.lineTo(...leftLeg);
+    ctx.moveTo(...bodyBottom);
+    ctx.lineTo(...rightLeg);
+    ctx.stroke();
+
+    // Arms follow cursor if close
+    const armLength = 40;
+    let dx = mousePos.x - bodyTop[0];
+    let dy = mousePos.y - bodyTop[1];
+    let dist = Math.hypot(dx, dy);
+    let rightAngle = 25;
+    if (dist < armReach && (mood === "curious" || mood === "happy")) {
+        rightAngle = Math.atan2(dy, dx) * 180/Math.PI - 90;
+    } else {
+        rightAngle = 25 + 10*Math.sin(t/2);
+    }
+
+    const leftArm = rotatePoint(bodyTop[0], bodyTop[1]+10+armLength, ...bodyTop, -25 + swing/2);
+    const rightArm = rotatePoint(bodyTop[0], bodyTop[1]+10+armLength, ...bodyTop, rightAngle);
+
+    ctx.beginPath();
+    ctx.moveTo(bodyTop[0], bodyTop[1]+10);
+    ctx.lineTo(...leftArm);
+    ctx.moveTo(bodyTop[0], bodyTop[1]+10);
+    ctx.lineTo(...rightArm);
+    ctx.stroke();
+}
+
+// Random walking / mood logic
+function updateStickman() {
+    if (!dragging) {
+        vy += gravity;
+        y += vy;
+        x += vx;
+
+        if (y > canvas.height - 50) {
+            y = canvas.height - 50;
+            vy = 0;
         }
+        if (x < 25) x = 25;
+        if (x > canvas.width - 25) x = canvas.width - 25;
 
-        function update() {
-            if (!dragging) {
-                vy += ay;
-                y += vy;
-                x += vx;
-
-                // floor collision
-                if (y + 70 > canvas.height) {
-                    y = canvas.height - 70;
-                    vy = -vy * 0.5;
-                }
-
-                // wall collision
-                if (x - 25 < 0 || x + 25 > canvas.width) vx *= -1;
-            }
-            drawStickman();
-            requestAnimationFrame(update);
+        if (Math.random() < 0.02) {
+            vx = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random()*2);
         }
+    }
 
-        canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            if (Math.abs(e.clientX - x) < 40 && Math.abs(e.clientY - y) < 70) {
-                dragging = true;
-                offsetX = e.clientX - x;
-                offsetY = e.clientY - y;
-            }
-        });
+    if (Math.random() < 0.005) {
+        const moods = ["neutral","curious","happy"];
+        mood = moods[Math.floor(Math.random()*moods.length)];
+    }
+}
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (dragging) {
-                const rect = canvas.getBoundingClientRect();
-                x = e.clientX - rect.left - offsetX;
-                y = e.clientY - rect.top - offsetY;
-            }
-        });
+// Animation loop
+function animate() {
+    updateStickman();
+    drawStickman();
+    requestAnimationFrame(animate);
+}
 
-        canvas.addEventListener('mouseup', () => {
-            dragging = false;
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            dragging = false;
-        });
-
-        update();
-    </script>
+animate();
+</script>
 </body>
 </html>
