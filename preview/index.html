@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stickman AI Preview</title>
+<style>
+    body {
+        margin: 0;
+        background: #f0f8ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+    }
+    canvas {
+        background: #fff;
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        cursor: grab;
+    }
+</style>
+</head>
+<body>
+<canvas id="stickmanCanvas" width="500" height="500"></canvas>
+<script>
+const canvas = document.getElementById("stickmanCanvas");
+const ctx = canvas.getContext("2d");
+
+let x = canvas.width / 2;
+let y = canvas.height / 2 + 50;
+let vx = 0;
+let vy = 0;
+const gravity = 0.8;
+const armReach = 100;
+let frame = 0;
+let mood = "neutral"; // can be 'neutral', 'curious', 'happy'
+
+let mousePos = {x: x, y: y};
+let dragging = false;
+let dragOffset = {x:0, y:0};
+
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    mousePos.x = e.clientX - rect.left;
+    mousePos.y = e.clientY - rect.top;
+
+    if (dragging) {
+        x = mousePos.x - dragOffset.x;
+        y = mousePos.y - dragOffset.y;
+        vx = 0;
+        vy = 0;
+    }
+});
+
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    // Check if cursor is over stickman head/body
+    if (Math.abs(mx - x) < 30 && Math.abs(my - y + 50) < 80) {
+        dragging = true;
+        dragOffset.x = mx - x;
+        dragOffset.y = my - y;
+        canvas.style.cursor = 'grabbing';
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    dragging = false;
+    canvas.style.cursor = 'grab';
+});
+
+// Helper function to rotate points
+function rotatePoint(px, py, ox, oy, angleDeg) {
+    let a = angleDeg * Math.PI / 180;
+    let dx = px - ox;
+    let dy = py - oy;
+    return [
+        ox + dx * Math.cos(a) - dy * Math.sin(a),
+        oy + dx * Math.sin(a) + dy * Math.cos(a)
+    ];
+}
+
+// Draw stickman
+function drawStickman() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame += 1;
+    const t = frame / 12;
+
+    ctx.lineWidth = 6; // Bolder outline
+    ctx.strokeStyle = "#000"; // black
+
+    // Body points
+    const headX = x;
+    const headY = y - 80;
+    const bodyTop = [x, y - 68];
+    const bodyBottom = [x, y];
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(headX, headY, 12, 0, Math.PI * 2); // bigger radius
+    ctx.stroke();
+
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(...bodyTop);
+    ctx.lineTo(...bodyBottom);
+    ctx.stroke();
+
+    // Legs swing
+    const legLength = 50;
+    const swing = 15 * Math.sin(t);
+    const leftLeg = rotatePoint(bodyBottom[0], bodyBottom[1]+legLength, ...bodyBottom, -15 + swing);
+    const rightLeg = rotatePoint(bodyBottom[0], bodyBottom[1]+legLength, ...bodyBottom, 15 - swing);
+    ctx.beginPath();
+    ctx.moveTo(...bodyBottom);
+    ctx.lineTo(...leftLeg);
+    ctx.moveTo(...bodyBottom);
+    ctx.lineTo(...rightLeg);
+    ctx.stroke();
+
+    // Arms follow cursor if close
+    const armLength = 40;
+    let dx = mousePos.x - bodyTop[0];
+    let dy = mousePos.y - bodyTop[1];
+    let dist = Math.hypot(dx, dy);
+    let rightAngle = 25;
+    if (dist < armReach && (mood === "curious" || mood === "happy")) {
+        rightAngle = Math.atan2(dy, dx) * 180/Math.PI - 90;
+    } else {
+        rightAngle = 25 + 10*Math.sin(t/2);
+    }
+
+    const leftArm = rotatePoint(bodyTop[0], bodyTop[1]+10+armLength, ...bodyTop, -25 + swing/2);
+    const rightArm = rotatePoint(bodyTop[0], bodyTop[1]+10+armLength, ...bodyTop, rightAngle);
+
+    ctx.beginPath();
+    ctx.moveTo(bodyTop[0], bodyTop[1]+10);
+    ctx.lineTo(...leftArm);
+    ctx.moveTo(bodyTop[0], bodyTop[1]+10);
+    ctx.lineTo(...rightArm);
+    ctx.stroke();
+}
+
+// Random walking / mood logic
+function updateStickman() {
+    if (!dragging) {
+        // gravity
+        vy += gravity;
+        y += vy;
+        x += vx;
+
+        // ground collision
+        if (y > canvas.height - 50) {
+            y = canvas.height - 50;
+            vy = 0;
+        }
+        if (x < 25) x = 25;
+        if (x > canvas.width - 25) x = canvas.width - 25;
+
+        // random horizontal velocity
+        if (Math.random() < 0.02) {
+            vx = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random()*2);
+        }
+    }
+
+    // Change mood randomly
+    if (Math.random() < 0.005) {
+        const moods = ["neutral","curious","happy"];
+        mood = moods[Math.floor(Math.random()*moods.length)];
+    }
+}
+
+// Animation loop
+function animate() {
+    updateStickman();
+    drawStickman();
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
