@@ -15,3 +15,7 @@ Info:The AI Stick man can left click with just its hand but if the cursor is nea
 
 
 <img width="291" height="166" alt="typinguntame" src="https://github.com/user-attachments/assets/a70c72aa-d427-4c71-b6a0-e2887fa78cf1" />
+
+
+
+ofc I already trained mine not to do that.
