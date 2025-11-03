@@ -1,199 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 <title>Stickman AI Preview</title>
 <style>
-    body {
-        margin: 0;
-        background: #f0f8ff;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        font-family: Arial, sans-serif;
-    }
-    canvas {
-        background: #fff;
-        border: 2px solid #007bff;
-        border-radius: 10px;
-        cursor: grab;
-    }
-    .back-btn {
-        margin-top: 20px;
-        margin-bottom: 10px;
-        padding: 10px 20px;
-        background-color: #28a745;
-        color: white;
-        text-decoration: none;
-        font-weight: bold;
-        border-radius: 6px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        transition: all 0.2s ease;
-    }
-    .back-btn:hover {
-        background-color: #1e7e34;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0,0,0,0.25);
-    }
+  :root{ --max-canvas:500px; --bg:#f0f8ff; --border:#007bff;}
+  body {
+    margin:0;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+    font-family:Arial, sans-serif;
+  }
+
+  .back-btn {
+    margin:15px;
+    padding:10px 20px;
+    background:#28a745;
+    color:#fff;
+    border-radius:8px;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 4px 8px rgba(0,0,0,0.12);
+  }
+
+  .preview-wrap {
+    width:95vw;
+    max-width:var(--max-canvas);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  /* canvas is responsive visually; actual pixel buffer set by JS for DPR */
+  canvas {
+    width:100%;
+    height:auto;
+    max-width:var(--max-canvas);
+    background:#fff;
+    border:2px solid var(--border);
+    border-radius:10px;
+    touch-action:none; /* prevent scrolling while touching the canvas */
+    -ms-touch-action:none;
+    cursor:grab;
+    display:block;
+  }
+
+  @media (orientation:landscape) {
+    :root { --max-canvas:600px; }
+  }
 </style>
 </head>
 <body>
-<a href="../index.html" class="back-btn">Go Back</a>
-<canvas id="stickmanCanvas" width="500" height="500"></canvas>
-<script>
-const canvas = document.getElementById("stickmanCanvas");
-const ctx = canvas.getContext("2d");
+  <a class="back-btn" href="../index.html"> Go Back</a>
+  <div class="preview-wrap">
+    <canvas id="stickmanCanvas" aria-label="Stickman preview"></canvas>
+  </div>
 
-let x = canvas.width / 2;
-let y = canvas.height / 2 + 50;
-let vx = 0;
-let vy = 0;
+<script>
+/* Responsive, DPR-aware canvas + mouse/touch dragging + gravity + behavior
+   Replace existing preview code with this file. */
+
+const canvas = document.getElementById('stickmanCanvas');
+const ctx = canvas.getContext('2d');
+
+let DPR = Math.max(1, window.devicePixelRatio || 1);
+
+let logicalWidth = 500;
+let logicalHeight = 500;
+
+// stickman state (in logical pixels, matches canvas internal coordinates)
+let x = logicalWidth / 2;
+let y = logicalHeight / 2 + 50;
+let vx = 0, vy = 0;
 const gravity = 0.8;
 const armReach = 100;
 let frame = 0;
-let mood = "neutral"; // can be 'neutral', 'curious', 'happy'
+let mood = 'neutral';
 
 let mousePos = {x: x, y: y};
 let dragging = false;
-let dragOffset = {x:0, y:0};
+let dragOffset = {x: 0, y: 0};
 
+let isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+// Resize canvas to fit CSS display size and set internal buffer for DPR
+function resizeCanvas() {
+  // set CSS size limited by parent .preview-wrap width
+  const displayWidth = Math.min(document.querySelector('.preview-wrap').clientWidth, window.innerWidth * 0.98);
+  // maintain square canvas
+  const displayHeight = displayWidth;
+
+  // device pixel ratio buffer
+  DPR = Math.max(1, window.devicePixelRatio || 1);
+  canvas.style.width = displayWidth + 'px';
+  canvas.style.height = displayHeight + 'px';
+
+  canvas.width = Math.round(displayWidth * DPR);
+  canvas.height = Math.round(displayHeight * DPR);
+
+  // scale drawing operations for DPR
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // re-center stickman visually (avoid it falling off)
+  logicalWidth = displayWidth;
+  logicalHeight = displayHeight;
+  // keep the stickman near center after resize
+  x = Math.max(30, Math.min(x, logicalWidth - 30));
+  y = Math.max(60, Math.min(y, logicalHeight - 30));
+
+  mousePos.x = Math.max(0, Math.min(mousePos.x, logicalWidth));
+  mousePos.y = Math.max(0, Math.min(mousePos.y, logicalHeight));
+}
+
+// convert client coords to canvas logical coords
+function clientToCanvas(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const cx = clientX - rect.left;
+  const cy = clientY - rect.top;
+  // CSS coords map to logical display width (we used that as logicalWidth)
+  // no need to divide by DPR because we scaled the ctx already
+  return { x: cx, y: cy };
+}
+
+// pointer handlers (unified for mouse + touch)
+function onPointerMove(clientX, clientY) {
+  const p = clientToCanvas(clientX, clientY);
+  mousePos.x = p.x;
+  mousePos.y = p.y;
+  if (dragging) {
+    x = mousePos.x - dragOffset.x;
+    y = mousePos.y - dragOffset.y;
+    vx = 0;
+    vy = 0;
+  }
+}
+
+function pointerDown(clientX, clientY) {
+  const p = clientToCanvas(clientX, clientY);
+  const mx = p.x, my = p.y;
+  // approximate body area for grab (same as desktop logic)
+  if (Math.abs(mx - x) < 30 && Math.abs(my - (y)) < 80) {
+    dragging = true;
+    dragOffset.x = mx - x;
+    dragOffset.y = my - y;
+    canvas.style.cursor = 'grabbing';
+  }
+}
+
+function pointerUp() {
+  dragging = false;
+  canvas.style.cursor = 'grab';
+}
+
+// Mouse events (desktop)
 canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    mousePos.x = e.clientX - rect.left;
-    mousePos.y = e.clientY - rect.top;
-
-    if (dragging) {
-        x = mousePos.x - dragOffset.x;
-        y = mousePos.y - dragOffset.y;
-        vx = 0;
-        vy = 0;
-    }
+  if (isMobile) return;
+  onPointerMove(e.clientX, e.clientY);
 });
-
 canvas.addEventListener('mousedown', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    if (Math.abs(mx - x) < 30 && Math.abs(my - y + 50) < 80) {
-        dragging = true;
-        dragOffset.x = mx - x;
-        dragOffset.y = my - y;
-        canvas.style.cursor = 'grabbing';
-    }
+  if (isMobile) return;
+  pointerDown(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', (e) => {
+  if (isMobile) return;
+  pointerUp();
 });
 
-canvas.addEventListener('mouseup', () => {
-    dragging = false;
-    canvas.style.cursor = 'grab';
+// Touch events (mobile)
+canvas.addEventListener('touchstart', (e) => {
+  if (!e.touches || e.touches.length === 0) return;
+  e.preventDefault(); // prevent page scroll
+  const t = e.touches[0];
+  pointerDown(t.clientX, t.clientY);
+});
+canvas.addEventListener('touchmove', (e) => {
+  if (!e.touches || e.touches.length === 0) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  onPointerMove(t.clientX, t.clientY);
+}, { passive: false });
+window.addEventListener('touchend', (e) => {
+  pointerUp();
 });
 
-// Helper function to rotate points
+// helper: rotation
 function rotatePoint(px, py, ox, oy, angleDeg) {
-    let a = angleDeg * Math.PI / 180;
-    let dx = px - ox;
-    let dy = py - oy;
-    return [
-        ox + dx * Math.cos(a) - dy * Math.sin(a),
-        oy + dx * Math.sin(a) + dy * Math.cos(a)
-    ];
+  const a = angleDeg * Math.PI / 180;
+  const dx = px - ox;
+  const dy = py - oy;
+  return [
+    ox + dx * Math.cos(a) - dy * Math.sin(a),
+    oy + dx * Math.sin(a) + dy * Math.cos(a)
+  ];
 }
 
-// Draw stickman
+// main draw
 function drawStickman() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    frame += 1;
-    const t = frame / 12;
+  ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+  frame += 1;
+  const t = frame / 12;
 
-    ctx.lineWidth = 6; // Bolder outline
-    ctx.strokeStyle = "#000"; // black
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#000';
+  ctx.lineCap = 'round';
 
-    const headX = x;
-    const headY = y - 80;
-    const bodyTop = [x, y - 68];
-    const bodyBottom = [x, y];
+  const headX = x;
+  const headY = y - 80;
+  const bodyTop = [x, y - 68];
+  const bodyBottom = [x, y];
 
-    // Head
-    ctx.beginPath();
-    ctx.arc(headX, headY, 12, 0, Math.PI * 2);
-    ctx.stroke();
+  // head
+  ctx.beginPath();
+  ctx.arc(headX, headY, 12, 0, Math.PI * 2);
+  ctx.stroke();
 
-    // Body
-    ctx.beginPath();
-    ctx.moveTo(...bodyTop);
-    ctx.lineTo(...bodyBottom);
-    ctx.stroke();
+  // body
+  ctx.beginPath();
+  ctx.moveTo(...bodyTop);
+  ctx.lineTo(...bodyBottom);
+  ctx.stroke();
 
-    // Legs swing
-    const legLength = 50;
-    const swing = 15 * Math.sin(t);
-    const leftLeg = rotatePoint(bodyBottom[0], bodyBottom[1]+legLength, ...bodyBottom, -15 + swing);
-    const rightLeg = rotatePoint(bodyBottom[0], bodyBottom[1]+legLength, ...bodyBottom, 15 - swing);
-    ctx.beginPath();
-    ctx.moveTo(...bodyBottom);
-    ctx.lineTo(...leftLeg);
-    ctx.moveTo(...bodyBottom);
-    ctx.lineTo(...rightLeg);
-    ctx.stroke();
+  // legs
+  const legLength = 50;
+  const swing = 15 * Math.sin(t);
+  const leftLeg = rotatePoint(bodyBottom[0], bodyBottom[1] + legLength, ...bodyBottom, -15 + swing);
+  const rightLeg = rotatePoint(bodyBottom[0], bodyBottom[1] + legLength, ...bodyBottom, 15 - swing);
+  ctx.beginPath();
+  ctx.moveTo(...bodyBottom);
+  ctx.lineTo(...leftLeg);
+  ctx.moveTo(...bodyBottom);
+  ctx.lineTo(...rightLeg);
+  ctx.stroke();
 
-    // Arms follow cursor if close
-    const armLength = 40;
-    let dx = mousePos.x - bodyTop[0];
-    let dy = mousePos.y - bodyTop[1];
-    let dist = Math.hypot(dx, dy);
-    let rightAngle = 25;
-    if (dist < armReach && (mood === "curious" || mood === "happy")) {
-        rightAngle = Math.atan2(dy, dx) * 180/Math.PI - 90;
-    } else {
-        rightAngle = 25 + 10*Math.sin(t/2);
-    }
-
-    const leftArm = rotatePoint(bodyTop[0], bodyTop[1]+10+armLength, ...bodyTop, -25 + swing/2);
-    const rightArm = rotatePoint(bodyTop[0], bodyTop[1]+10+armLength, ...bodyTop, rightAngle);
-
-    ctx.beginPath();
-    ctx.moveTo(bodyTop[0], bodyTop[1]+10);
-    ctx.lineTo(...leftArm);
-    ctx.moveTo(bodyTop[0], bodyTop[1]+10);
-    ctx.lineTo(...rightArm);
-    ctx.stroke();
+  // arms - follow cursor if close
+  const armLength = 40;
+  const dx = mousePos.x - bodyTop[0];
+  const dy = mousePos.y - bodyTop[1];
+  const dist = Math.hypot(dx, dy);
+  let rightAngle = 25;
+  if (dist < armReach && (mood === 'curious' || mood === 'happy')) {
+    rightAngle = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+  } else {
+    rightAngle = 25 + 10 * Math.sin(t / 2);
+  }
+  const leftArm = rotatePoint(bodyTop[0], bodyTop[1] + 10 + armLength, ...bodyTop, -25 + swing / 2);
+  const rightArm = rotatePoint(bodyTop[0], bodyTop[1] + 10 + armLength, ...bodyTop, rightAngle);
+  ctx.beginPath();
+  ctx.moveTo(bodyTop[0], bodyTop[1] + 10);
+  ctx.lineTo(...leftArm);
+  ctx.moveTo(bodyTop[0], bodyTop[1] + 10);
+  ctx.lineTo(...rightArm);
+  ctx.stroke();
 }
 
-// Random walking / mood logic
+// physics + AI
 function updateStickman() {
-    if (!dragging) {
-        vy += gravity;
-        y += vy;
-        x += vx;
+  if (!dragging) {
+    vy += gravity;
+    y += vy;
+    x += vx;
 
-        if (y > canvas.height - 50) {
-            y = canvas.height - 50;
-            vy = 0;
-        }
-        if (x < 25) x = 25;
-        if (x > canvas.width - 25) x = canvas.width - 25;
-
-        if (Math.random() < 0.02) {
-            vx = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random()*2);
-        }
+    if (y > logicalHeight - 50) {
+      y = logicalHeight - 50;
+      vy = 0;
     }
+    if (x < 25) x = 25;
+    if (x > logicalWidth - 25) x = logicalWidth - 25;
 
-    if (Math.random() < 0.005) {
-        const moods = ["neutral","curious","happy"];
-        mood = moods[Math.floor(Math.random()*moods.length)];
+    if (Math.random() < 0.02) {
+      vx = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 2);
     }
+  }
+
+  if (Math.random() < 0.005) {
+    const moods = ['neutral','curious','happy'];
+    mood = moods[Math.floor(Math.random()*moods.length)];
+  }
 }
 
-// Animation loop
+// animation loop
 function animate() {
-    updateStickman();
-    drawStickman();
-    requestAnimationFrame(animate);
+  updateStickman();
+  drawStickman();
+  requestAnimationFrame(animate);
 }
 
+// handle window resize
+function onResize() {
+  resizeCanvas();
+}
+window.addEventListener('resize', onResize);
+
+// initial setup
+resizeCanvas();
 animate();
+
 </script>
 </body>
 </html>
